@@ -1,3 +1,3 @@
 
-# GPT - Git Progress Tracker
+# GPT - Git Progress Tracker :）
 
