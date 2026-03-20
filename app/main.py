@@ -11,6 +11,7 @@ from app.api.routes import router
 from app.core.config import settings
 from app.core.logging import configure_logging
 from app.db.session import init_db
+from app.services.scheduler_service import start_scheduler, stop_scheduler
 
 
 @asynccontextmanager
@@ -18,7 +19,11 @@ async def lifespan(app: FastAPI):
     configure_logging()
     settings.data_dir.mkdir(parents=True, exist_ok=True)
     await init_db()
-    yield
+    await start_scheduler()
+    try:
+        yield
+    finally:
+        await stop_scheduler()
 
 
 app = FastAPI(title=settings.app_name, lifespan=lifespan)

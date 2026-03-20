@@ -14,6 +14,7 @@ from app.schemas.settings import (
 from app.services.feishu_client import FeishuClient, FeishuConfigError
 from app.services.feishu_service import test_feishu_connection_from_settings
 from app.services.gitlab_client import GitLabClient, GitLabConfigError
+from app.services.scheduler_service import reload_scheduler
 from app.services.settings_service import get_or_create_settings, update_settings
 
 router = APIRouter()
@@ -31,6 +32,7 @@ async def save_gitlab_settings(
     session: AsyncSession = Depends(get_db_session),
 ) -> AppSettingsRead:
     settings = await update_settings(session, payload.model_dump(exclude_none=True))
+    await reload_scheduler()
     return AppSettingsRead.model_validate(settings)
 
 
@@ -40,6 +42,7 @@ async def save_feishu_settings(
     session: AsyncSession = Depends(get_db_session),
 ) -> AppSettingsRead:
     settings = await update_settings(session, payload.model_dump(exclude_none=True))
+    await reload_scheduler()
     return AppSettingsRead.model_validate(settings)
 
 
