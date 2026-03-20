@@ -10,6 +10,28 @@
 - 每个 stage 都必须可验证
 - 所有后端接口、数据库访问、外部 HTTP 调用都使用异步实现
 - 优先保证主链路稳定：配置 -> 同步 commit -> 查看 commit -> 生成日报 -> 发送飞书
+- 优先使用本地 mock 场景做分步验证，再接入真实外部系统
+
+## 1.1 Mock 验证基线
+
+为了降低联调成本，项目内维护一套正式的 Mock GitLab 能力，作为后续 stage 的默认验证基础设施。
+
+当前约定：
+
+- 使用根目录入口 `run_mock_gitlab.py`
+- Mock 数据放在 `mock/fixtures/`
+- 支持的基础场景：
+  - `basic`
+  - `no_commits`
+  - `many_commits`
+- 支持通过启动参数注入慢响应和接口错误，验证容错逻辑
+
+建议使用方式：
+
+1. 先启动 `run_mock_gitlab.py`
+2. 再启动主应用
+3. 将 GitLab Base URL 指向本地 mock 服务
+4. 使用固定场景重复验证同步、筛选、分页、日报等能力
 
 ## 2. 总体阶段划分
 
@@ -113,6 +135,7 @@ flowchart LR
 - 按分支拉取 commit
 - commit 去重入库
 - 保存分支基础信息
+- 增加可复用的 Mock GitLab 验证能力
 - 实现手动同步接口：
   - `POST /api/sync/branches`
   - `POST /api/sync/commits`
@@ -125,6 +148,7 @@ flowchart LR
 
 验证方式：
 
+- 使用 `basic` mock 场景验证主链路
 - 手动触发同步后 `branches` 和 `commits` 表有数据
 - 同步两次后 commit 数量不异常增长
 - 提交历史接口能返回按时间倒序数据
@@ -159,6 +183,7 @@ flowchart LR
 
 验证方式：
 
+- 使用 `many_commits` mock 场景验证分页和筛选
 - 切换分支时数据正确变化
 - 输入筛选条件后结果正确缩小
 - 翻页后仍保持筛选条件
@@ -345,6 +370,7 @@ flowchart LR
 
 - 对应页面或接口是否可用
 - 主流程是否真实跑通
+- 优先确认 mock 场景下的结果稳定复现
 
 ### 5.2 数据检查
 
@@ -367,6 +393,7 @@ flowchart LR
 - 项目可启动
 - 配置可保存
 - GitLab 所有分支 commit 可同步入库
+- Mock GitLab 验证链路可复用
 
 ### Milestone B
 
@@ -395,3 +422,4 @@ flowchart LR
 - 不要一开始追求复杂 UI，先保证页面可用
 - 日报先做规则版摘要，LLM 优化放在后面接入
 - 所有外部集成都先提供“测试连接”接口，避免联调时排查困难
+- 对每个 stage 保留至少一个稳定可复现的 mock 验证场景

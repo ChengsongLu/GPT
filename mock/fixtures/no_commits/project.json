@@ -1,0 +1,7 @@
+{
+  "id": 124,
+  "name": "Quiet Project",
+  "path_with_namespace": "group/quiet-project",
+  "default_branch": "main",
+  "web_url": "http://127.0.0.1:9001/group/quiet-project"
+}

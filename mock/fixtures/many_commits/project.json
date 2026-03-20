@@ -1,0 +1,7 @@
+{
+  "id": 125,
+  "name": "Busy Project",
+  "path_with_namespace": "group/busy-project",
+  "default_branch": "main",
+  "web_url": "http://127.0.0.1:9001/group/busy-project"
+}

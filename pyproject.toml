@@ -1,0 +1,22 @@
+[project]
+name = "git-progress-tracker"
+version = "0.1.0"
+description = "FastAPI MVP for tracking GitLab commits and generating progress reports."
+requires-python = ">=3.12"
+dependencies = [
+    "aiosqlite>=0.20.0",
+    "fastapi>=0.115.0",
+    "greenlet>=3.1.1",
+    "httpx>=0.28.0",
+    "jinja2>=3.1.0",
+    "pydantic-settings>=2.6.0",
+    "sqlalchemy>=2.0.0",
+    "uvicorn>=0.32.0",
+]
+
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["app*"]

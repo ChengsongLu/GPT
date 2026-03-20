@@ -1,0 +1,33 @@
+{
+  "main": [
+    {
+      "id": "aaaaaaaa11111111",
+      "author_name": "Alice",
+      "author_email": "alice@example.com",
+      "committed_date": "2026-03-19T10:00:00Z",
+      "title": "Add dashboard metrics",
+      "message": "Add dashboard metrics\n\nInitial slice.",
+      "web_url": "http://127.0.0.1:9001/group/project/-/commit/aaaaaaaa11111111"
+    },
+    {
+      "id": "bbbbbbbb22222222",
+      "author_name": "Bob",
+      "author_email": "bob@example.com",
+      "committed_date": "2026-03-19T08:30:00Z",
+      "title": "Fix API timeout",
+      "message": "Fix API timeout",
+      "web_url": "http://127.0.0.1:9001/group/project/-/commit/bbbbbbbb22222222"
+    }
+  ],
+  "develop": [
+    {
+      "id": "cccccccc33333333",
+      "author_name": "Carol",
+      "author_email": "carol@example.com",
+      "committed_date": "2026-03-19T12:00:00Z",
+      "title": "Refine sync job logging",
+      "message": "Refine sync job logging",
+      "web_url": "http://127.0.0.1:9001/group/project/-/commit/cccccccc33333333"
+    }
+  ]
+}

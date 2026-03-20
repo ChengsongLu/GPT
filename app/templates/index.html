@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ page_title }}</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <main class="shell">
+    <section class="hero">
+      <p class="eyebrow">GitLab Commit Tracker</p>
+      <h1>Git Progress Tracker</h1>
+      <p>
+        当前版本已覆盖 Stage 2：可以保存唯一 GitLab 仓库配置、测试连接、同步所有分支与 commits，
+        并在前端按分支查看提交历史。
+      </p>
+      <div id="page-status" class="page-status" aria-live="polite"></div>
+    </section>
+
+    <nav class="top-nav" aria-label="Primary">
+      <button class="nav-pill is-active" data-view="config" type="button">配置</button>
+      <button class="nav-pill" data-view="commits" type="button">提交历史</button>
+      <button class="nav-pill" data-view="reports" type="button">日报</button>
+      <button class="nav-pill" data-view="feishu" type="button">飞书</button>
+    </nav>
+
+    <section id="view-config" class="view is-active">
+      <div class="grid">
+        <article class="card">
+          <div class="card-head">
+            <div>
+              <h2>GitLab 配置</h2>
+              <p>保存仓库地址、访问令牌、项目标识和同步间隔。测试连接会直接使用当前表单内容，不要求你先保存成功。</p>
+            </div>
+            <span class="badge">Stage 2</span>
+          </div>
+
+          <form id="gitlab-form">
+            <label>
+              GitLab Base URL
+              <input type="url" name="gitlab_base_url" placeholder="https://gitlab.example.com" required>
+            </label>
+            <div class="field-tip">
+              Mock 场景填 `http://127.0.0.1:9001`。真实 GitLab 填你的站点地址，例如 `https://gitlab.example.com`。
+            </div>
+            <label>
+              Personal Access Token
+              <input type="password" name="gitlab_token" placeholder="glpat-..." required>
+            </label>
+            <div class="field-tip">
+              Mock 场景这里不会校验，填任意非空字符串即可，例如 `mock-token`。真实 GitLab 需要填写有效的 Personal Access Token。
+            </div>
+            <label>
+              Project ID 或 group/project
+              <input type="text" name="gitlab_project_ref" placeholder="group/project" required>
+            </label>
+            <div class="field-tip">
+              这里表示 GitLab 项目标识。可以填数字 Project ID，也可以填路径形式，例如 `group/project`。
+              当前 mock 默认场景使用 `group/project`，`many_commits` 场景使用 `group/busy-project`。
+            </div>
+            <div class="inline-fields">
+              <label>
+                同步间隔（分钟）
+                <input type="number" name="sync_interval_minutes" min="1" max="1440" value="15" required>
+              </label>
+              <label>
+                时区
+                <input type="text" name="timezone" value="Asia/Shanghai" required>
+              </label>
+            </div>
+            <div class="action-row">
+              <button type="submit">保存配置</button>
+              <button type="button" class="ghost-button" id="test-gitlab-button">测试连接</button>
+            </div>
+            <div id="gitlab-status" class="status" aria-live="polite"></div>
+            <div id="gitlab-test-result" class="detail-box empty">尚未测试连接。</div>
+          </form>
+        </article>
+
+        <article class="card">
+          <div class="card-head">
+            <div>
+              <h2>同步控制</h2>
+              <p>先同步分支，再同步该仓库所有分支的 commit。重复同步会按已有记录去重。</p>
+            </div>
+            <span class="badge">Sync</span>
+          </div>
+
+          <div class="stack-actions">
+            <button type="button" id="sync-branches-button">同步分支</button>
+            <button type="button" id="sync-commits-button">同步 commits</button>
+          </div>
+          <div id="sync-status" class="status" aria-live="polite"></div>
+          <div id="sync-result" class="detail-box empty">尚未执行同步。</div>
+        </article>
+      </div>
+    </section>
+
+    <section id="view-commits" class="view">
+      <article class="card commit-layout">
+        <div class="card-head">
+          <div>
+            <h2>提交历史</h2>
+            <p>按分支切换查看 commit 历史，并支持按开发者与时间范围筛选。</p>
+          </div>
+          <span id="commit-summary" class="badge">未加载</span>
+        </div>
+
+        <div id="branch-tabs" class="branch-tabs">
+          <div class="empty-state">尚未同步分支。</div>
+        </div>
+
+        <form id="commit-filter-form" class="filter-grid">
+          <label>
+            开发者
+            <input type="text" name="author" placeholder="作者名关键字">
+          </label>
+          <label>
+            开始时间
+            <input type="datetime-local" name="date_from">
+          </label>
+          <label>
+            结束时间
+            <input type="datetime-local" name="date_to">
+          </label>
+          <label>
+            每页条数
+            <input type="number" name="page_size" min="1" max="100" value="20">
+          </label>
+          <div class="action-row">
+            <button type="submit">应用筛选</button>
+            <button type="button" class="ghost-button" id="reset-commit-filters">重置</button>
+          </div>
+        </form>
+
+        <div id="commit-status" class="status" aria-live="polite"></div>
+        <div id="commit-list" class="commit-list">
+          <div class="empty-state">请先同步分支与 commit。</div>
+        </div>
+
+        <div class="pagination">
+          <button type="button" class="ghost-button" id="prev-page">上一页</button>
+          <span id="pagination-label">第 1 页</span>
+          <button type="button" class="ghost-button" id="next-page">下一页</button>
+        </div>
+      </article>
+    </section>
+
+    <section id="view-reports" class="view">
+      <article class="card">
+        <div class="card-head">
+          <div>
+            <h2>日报</h2>
+            <p>这里会在后续 stage 接入项目整体日报与按分支日报。</p>
+          </div>
+          <span class="badge soft">Stage 5</span>
+        </div>
+        <div class="detail-box empty">
+          当前还未接入日报生成。下一阶段会基于昨天的 commits 生成项目整体总结和分支摘要。
+        </div>
+      </article>
+    </section>
+
+    <section id="view-feishu" class="view">
+      <article class="card">
+        <div class="card-head">
+          <div>
+            <h2>飞书配置</h2>
+            <p>保存飞书 App、多维表格和群 `chat_id`，为后续成员同步和日报发送做准备。</p>
+          </div>
+          <span class="badge soft">Stage 4+</span>
+        </div>
+
+        <form id="feishu-form">
+          <label>
+            App ID
+            <input type="text" name="feishu_app_id" placeholder="cli_xxx" required>
+          </label>
+          <label>
+            App Secret
+            <input type="password" name="feishu_app_secret" placeholder="secret" required>
+          </label>
+          <label>
+            多维表格 App Token
+            <input type="text" name="feishu_bitable_app_token" placeholder="bascn..." required>
+          </label>
+          <label>
+            Table ID
+            <input type="text" name="feishu_bitable_table_id" placeholder="tbl..." required>
+          </label>
+          <label>
+            群 chat_id
+            <input type="text" name="feishu_chat_id" placeholder="oc_xxx" required>
+          </label>
+          <button type="submit">保存飞书配置</button>
+          <div id="feishu-status" class="status" aria-live="polite"></div>
+        </form>
+      </article>
+    </section>
+  </main>
+
+  <script src="/static/app.js" defer></script>
+</body>
+</html>

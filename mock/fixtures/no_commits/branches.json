@@ -1,0 +1,10 @@
+[
+  {
+    "name": "main",
+    "default": true
+  },
+  {
+    "name": "release",
+    "default": false
+  }
+]

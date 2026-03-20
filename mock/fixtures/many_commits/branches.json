@@ -1,0 +1,14 @@
+[
+  {
+    "name": "main",
+    "default": true
+  },
+  {
+    "name": "develop",
+    "default": false
+  },
+  {
+    "name": "feature/reporting",
+    "default": false
+  }
+]

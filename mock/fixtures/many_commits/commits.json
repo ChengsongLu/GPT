@@ -1,0 +1,80 @@
+{
+  "main": [
+    {
+      "id": "m111111111111111",
+      "author_name": "Alice",
+      "author_email": "alice@example.com",
+      "committed_date": "2026-03-19T15:40:00Z",
+      "title": "Ship project dashboard",
+      "message": "Ship project dashboard",
+      "web_url": "http://127.0.0.1:9001/group/busy-project/-/commit/m111111111111111"
+    },
+    {
+      "id": "m222222222222222",
+      "author_name": "Bob",
+      "author_email": "bob@example.com",
+      "committed_date": "2026-03-19T14:12:00Z",
+      "title": "Improve commit filters",
+      "message": "Improve commit filters",
+      "web_url": "http://127.0.0.1:9001/group/busy-project/-/commit/m222222222222222"
+    },
+    {
+      "id": "m333333333333333",
+      "author_name": "Dana",
+      "author_email": "dana@example.com",
+      "committed_date": "2026-03-19T13:05:00Z",
+      "title": "Refine report summary structure",
+      "message": "Refine report summary structure",
+      "web_url": "http://127.0.0.1:9001/group/busy-project/-/commit/m333333333333333"
+    }
+  ],
+  "develop": [
+    {
+      "id": "d111111111111111",
+      "author_name": "Evan",
+      "author_email": "evan@example.com",
+      "committed_date": "2026-03-19T16:10:00Z",
+      "title": "Draft async scheduler wiring",
+      "message": "Draft async scheduler wiring",
+      "web_url": "http://127.0.0.1:9001/group/busy-project/-/commit/d111111111111111"
+    },
+    {
+      "id": "d222222222222222",
+      "author_name": "Alice",
+      "author_email": "alice@example.com",
+      "committed_date": "2026-03-19T12:55:00Z",
+      "title": "Prepare report cache layer",
+      "message": "Prepare report cache layer",
+      "web_url": "http://127.0.0.1:9001/group/busy-project/-/commit/d222222222222222"
+    },
+    {
+      "id": "d333333333333333",
+      "author_name": "Bob",
+      "author_email": "bob@example.com",
+      "committed_date": "2026-03-19T11:23:00Z",
+      "title": "Harden sync retries",
+      "message": "Harden sync retries",
+      "web_url": "http://127.0.0.1:9001/group/busy-project/-/commit/d333333333333333"
+    }
+  ],
+  "feature/reporting": [
+    {
+      "id": "f111111111111111",
+      "author_name": "Carol",
+      "author_email": "carol@example.com",
+      "committed_date": "2026-03-19T17:02:00Z",
+      "title": "Prototype report digest layout",
+      "message": "Prototype report digest layout",
+      "web_url": "http://127.0.0.1:9001/group/busy-project/-/commit/f111111111111111"
+    },
+    {
+      "id": "f222222222222222",
+      "author_name": "Carol",
+      "author_email": "carol@example.com",
+      "committed_date": "2026-03-19T10:18:00Z",
+      "title": "Add branch summary sections",
+      "message": "Add branch summary sections",
+      "web_url": "http://127.0.0.1:9001/group/busy-project/-/commit/f222222222222222"
+    }
+  ]
+}
