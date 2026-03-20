@@ -116,6 +116,13 @@ button:hover,
   transform: translateY(-1px);
 }
 
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+  transform: none;
+  filter: none;
+}
+
 .view {
   display: none;
 }
@@ -292,6 +299,14 @@ select:focus {
 
 .data-table td {
   font-size: 0.96rem;
+}
+
+.message-preview-cell {
+  min-width: 220px;
+  max-width: 360px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .status-pill {

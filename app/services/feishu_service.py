@@ -6,11 +6,14 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.contributor import Contributor
+from app.models.feishu_message_log import FeishuMessageLog
 from app.schemas.feishu import (
     ContributorItem,
     ContributorListResponse,
     ContributorSyncResponse,
     FeishuConnectionResult,
+    FeishuMessageLogItem,
+    FeishuMessageLogListResponse,
 )
 from app.services.feishu_client import FeishuClient
 from app.services.settings_service import get_or_create_settings
@@ -122,4 +125,26 @@ async def list_contributors(session: AsyncSession) -> ContributorListResponse:
         total_count=len(rows),
         active_count=active_count,
         contributors=[ContributorItem.model_validate(contributor) for contributor in rows],
+    )
+
+
+async def list_feishu_message_logs(
+    session: AsyncSession,
+    *,
+    limit: int = 50,
+) -> FeishuMessageLogListResponse:
+    safe_limit = min(max(limit, 1), 200)
+    result = await session.execute(
+        select(FeishuMessageLog)
+        .order_by(FeishuMessageLog.created_at.desc(), FeishuMessageLog.id.desc())
+        .limit(safe_limit)
+    )
+    rows = list(result.scalars().all())
+    sent_count = sum(1 for item in rows if item.status == "sent")
+    failed_count = sum(1 for item in rows if item.status == "failed")
+    return FeishuMessageLogListResponse(
+        total_count=len(rows),
+        sent_count=sent_count,
+        failed_count=failed_count,
+        items=[FeishuMessageLogItem.model_validate(item) for item in rows],
     )

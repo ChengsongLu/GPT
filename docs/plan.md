@@ -263,12 +263,13 @@ flowchart LR
 实现内容：
 
 - 实现飞书群消息发送服务
-- 支持发送项目整体日报
-- 支持将分支日报拼接到同一条消息或连续消息中
+- 按选定日期发送项目整体日报
+- 按选定日期连续发送各分支日报
 - 实现接口：
-  - `POST /api/reports/{report_id}/send`
-  - `POST /api/settings/test-feishu`
+-  - `POST /api/reports/send`
+-  - `POST /api/settings/test-feishu`
 - 更新发送状态和发送时间
+- Mock Feishu 支持消息发送验证
 
 消息建议结构：
 
@@ -280,14 +281,16 @@ flowchart LR
 
 完成标志：
 
-- 可以手动发送指定日报到飞书群
-- 发送状态可追踪
+- 可以手动发送指定日期的日报到飞书群
+- 项目整体日报和分支日报都能成功发送
+- 发送状态和发送时间可追踪
 
 验证方式：
 
 - 飞书群实际收到消息
 - 对应日报状态更新为 `sent`
-- 失败时状态更新为 `failed`
+- `sent_at` 被写入数据库
+- Mock Feishu 的 `/mock/sent-messages` 能看到发送记录
 
 ## 3.8 Stage 7：定时任务闭环
 

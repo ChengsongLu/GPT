@@ -22,6 +22,7 @@ def create_mock_feishu_app(
     records_payload = json.loads((scenario_dir / "records.json").read_text(encoding="utf-8"))
 
     app = FastAPI(title=f"Mock Feishu ({scenario})")
+    sent_messages: list[dict] = []
 
     def maybe_fail(endpoint: str) -> None:
         if fail_endpoint == endpoint:
@@ -56,5 +57,24 @@ def create_mock_feishu_app(
                 "table_id": table_id,
             },
         }
+
+    @app.post("/open-apis/im/v1/messages")
+    async def create_message(receive_id_type: str) -> dict:
+        maybe_fail("messages")
+        if receive_id_type != "chat_id":
+            raise HTTPException(status_code=400, detail="Mock only supports receive_id_type=chat_id")
+        message_id = f"om_mock_{len(sent_messages) + 1:04d}"
+        sent_messages.append({"message_id": message_id, "receive_id_type": receive_id_type})
+        return {
+            "code": 0,
+            "msg": "success",
+            "data": {
+                "message_id": message_id,
+            },
+        }
+
+    @app.get("/mock/sent-messages")
+    async def get_sent_messages() -> dict:
+        return {"items": sent_messages, "total": len(sent_messages)}
 
     return app

@@ -1,16 +1,24 @@
 from datetime import date
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from httpx import HTTPError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_db_session
 from app.llm import LLMConfigError, LLMRequestError
-from app.schemas.report import DailyReportGenerationResponse, DailyReportListResponse, ReportDateListResponse
+from app.schemas.report import (
+    DailyReportGenerationResponse,
+    DailyReportListResponse,
+    DailyReportSendResponse,
+    ReportDateListResponse,
+)
+from app.services.feishu_client import FeishuConfigError
 from app.services.report_service import (
     generate_daily_reports,
     list_branch_reports,
     list_project_reports,
     list_report_dates,
+    send_daily_reports_to_feishu,
 )
 
 router = APIRouter()
@@ -51,3 +59,18 @@ async def trigger_daily_report_generation(
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except LLMRequestError as exc:
         raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+
+@router.post("/reports/send", response_model=DailyReportSendResponse)
+async def send_daily_reports(
+    report_date: date | None = Query(default=None),
+    session: AsyncSession = Depends(get_db_session),
+) -> DailyReportSendResponse:
+    try:
+        return await send_daily_reports_to_feishu(session, report_date=report_date)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except FeishuConfigError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except HTTPError as exc:
+        raise HTTPException(status_code=502, detail=f"飞书请求失败: {exc}") from exc

@@ -30,6 +30,14 @@ class DailyReportGenerationResponse(BaseModel):
     branch_reports: list[DailyReportItem]
 
 
+class DailyReportSendResponse(BaseModel):
+    report_date: date
+    chat_id: str
+    report_count: int
+    message_count: int
+    message_ids: list[str]
+
+
 class ReportDateItem(BaseModel):
     report_date: date
     commit_count: int

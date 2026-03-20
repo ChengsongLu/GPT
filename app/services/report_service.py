@@ -10,18 +10,22 @@ from zoneinfo import ZoneInfo
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.branches import branch_name_sort_key, sort_branch_names
 from app.core.config import settings as app_config
 from app.llm import LLMClient
 from app.models.commit import Commit
 from app.models.contributor import Contributor
 from app.models.daily_report import DailyReport
+from app.models.feishu_message_log import FeishuMessageLog
 from app.schemas.report import (
     DailyReportGenerationResponse,
     DailyReportItem,
     DailyReportListResponse,
+    DailyReportSendResponse,
     ReportDateItem,
     ReportDateListResponse,
 )
+from app.services.feishu_client import FeishuClient, FeishuConfigError
 from app.services.settings_service import get_or_create_settings
 
 logger = logging.getLogger(__name__)
@@ -111,7 +115,7 @@ def build_project_fact_sheet(report_date: date, contexts: list[CommitContext], t
         lines.append(f"- {name}：{count} 条 commit")
 
     lines.append("分支事实：")
-    for branch_name in sorted(branch_groups):
+    for branch_name in sort_branch_names(branch_groups):
         branch_contexts = sorted(
             branch_groups[branch_name],
             key=lambda item: ensure_utc(item.commit.committed_at) or datetime.min.replace(tzinfo=UTC),
@@ -327,7 +331,7 @@ async def list_branch_reports(
 
     result = await session.execute(stmt)
     rows = list(result.scalars().all())
-    branch_names = sorted({row.branch_name for row in rows if row.branch_name})
+    branch_names = sort_branch_names(row.branch_name for row in rows if row.branch_name)
     return DailyReportListResponse(
         report_date=report_date,
         items=[DailyReportItem.model_validate(row) for row in rows],
@@ -412,7 +416,7 @@ async def generate_daily_reports(
                     contexts=grouped_by_branch[branch_name],
                     timezone_name=settings.timezone,
                 )
-                for branch_name in sorted(grouped_by_branch)
+                for branch_name in sort_branch_names(grouped_by_branch)
             ]
         )
         logger.info(
@@ -431,7 +435,7 @@ async def generate_daily_reports(
     session.add(project_report)
 
     branch_reports: list[DailyReport] = []
-    for branch_name, content in zip(sorted(grouped_by_branch), branch_contents):
+    for branch_name, content in zip(sort_branch_names(grouped_by_branch), branch_contents):
         branch_report = DailyReport(
             report_date=report_date,
             report_type="branch",
@@ -459,4 +463,120 @@ async def generate_daily_reports(
         branch_count=len(branch_reports),
         project_report=DailyReportItem.model_validate(project_report),
         branch_reports=[DailyReportItem.model_validate(item) for item in branch_reports],
+    )
+
+
+def build_feishu_report_message(report: DailyReport) -> str:
+    if report.report_type == "project":
+        title = f"项目整体日报 | {report.report_date.isoformat()}"
+    else:
+        title = f"分支日报 | {report.branch_name or '未知分支'} | {report.report_date.isoformat()}"
+    return f"{title}\n\n{report.content}"
+
+
+async def send_daily_reports_to_feishu(
+    session: AsyncSession,
+    report_date: date | None = None,
+) -> DailyReportSendResponse:
+    settings = await get_or_create_settings(session)
+    if report_date is None:
+        report_date, _, _ = get_yesterday_window(settings.timezone)
+
+    stmt = (
+        select(DailyReport)
+        .where(DailyReport.report_date == report_date)
+        .order_by(DailyReport.report_type.asc(), DailyReport.branch_name.asc().nullslast(), DailyReport.id.asc())
+    )
+    result = await session.execute(stmt)
+    reports = list(result.scalars().all())
+    if not reports:
+        raise ValueError(f"{report_date.isoformat()} 没有可发送的日报，请先生成日报")
+
+    project_reports = [item for item in reports if item.report_type == "project"]
+    branch_reports = [item for item in reports if item.report_type == "branch"]
+    branch_reports = sorted(branch_reports, key=lambda item: branch_name_sort_key(item.branch_name))
+    ordered_reports = [*project_reports, *branch_reports]
+
+    logger.info(
+        "send_daily_reports_started report_date=%s report_count=%s chat_id=%s",
+        report_date.isoformat(),
+        len(ordered_reports),
+        settings.feishu_chat_id or "-",
+    )
+
+    async with FeishuClient.from_settings(settings) as client:
+        message_ids: list[str] = []
+        for report in ordered_reports:
+            message_text = build_feishu_report_message(report)
+            logger.info(
+                "send_daily_report_message report_date=%s report_id=%s report_type=%s branch=%s text_length=%s",
+                report_date.isoformat(),
+                report.id,
+                report.report_type,
+                report.branch_name or "-",
+                len(message_text),
+            )
+            try:
+                payload = await client.send_text_message(text=message_text, chat_id=settings.feishu_chat_id)
+                message_id = str(payload.get("message_id") or payload.get("message", {}).get("message_id") or "")
+                sent_at = datetime.now(UTC)
+                report.status = "sent"
+                report.sent_at = sent_at
+                session.add(report)
+                session.add(
+                    FeishuMessageLog(
+                        report_id=report.id,
+                        report_date=report.report_date,
+                        report_type=report.report_type,
+                        branch_name=report.branch_name,
+                        chat_id=settings.feishu_chat_id or "",
+                        message_id=message_id or None,
+                        status="sent",
+                        content_preview=message_text[:1000],
+                        error_detail=None,
+                        sent_at=sent_at,
+                    )
+                )
+                if message_id:
+                    message_ids.append(message_id)
+            except Exception as exc:
+                report.status = "failed"
+                session.add(report)
+                session.add(
+                    FeishuMessageLog(
+                        report_id=report.id,
+                        report_date=report.report_date,
+                        report_type=report.report_type,
+                        branch_name=report.branch_name,
+                        chat_id=settings.feishu_chat_id or "",
+                        message_id=None,
+                        status="failed",
+                        content_preview=message_text[:1000],
+                        error_detail=str(exc),
+                        sent_at=None,
+                    )
+                )
+                await session.commit()
+                logger.exception(
+                    "send_daily_report_message_failed report_date=%s report_id=%s report_type=%s branch=%s",
+                    report_date.isoformat(),
+                    report.id,
+                    report.report_type,
+                    report.branch_name or "-",
+                )
+                raise
+
+    await session.commit()
+    logger.info(
+        "send_daily_reports_finished report_date=%s report_count=%s message_count=%s",
+        report_date.isoformat(),
+        len(ordered_reports),
+        len(message_ids),
+    )
+    return DailyReportSendResponse(
+        report_date=report_date,
+        chat_id=settings.feishu_chat_id or "",
+        report_count=len(ordered_reports),
+        message_count=len(ordered_reports),
+        message_ids=message_ids,
     )

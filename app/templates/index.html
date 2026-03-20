@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{{ page_title }}</title>
-  <link rel="stylesheet" href="/static/styles.css?v=20260320-log-viewer">
+  <link rel="stylesheet" href="/static/styles.css?v=20260320-feishu-message-history">
 </head>
 <body>
   <main class="shell">
@@ -164,6 +164,7 @@
 
         <div class="action-row">
           <button type="button" id="generate-reports-button">重新生成选中日报</button>
+          <button type="button" class="ghost-button" id="send-reports-button">发送到飞书群</button>
         </div>
         <div id="reports-status" class="status" aria-live="polite"></div>
 
@@ -265,6 +266,40 @@
             尚未同步成员映射。
           </div>
         </article>
+
+        <article class="card">
+          <div class="card-head">
+            <div>
+              <h2>历史消息</h2>
+              <p>这里展示已尝试发送到飞书群的历史消息，包括成功和失败记录。</p>
+            </div>
+            <span id="feishu-messages-summary" class="badge">0</span>
+          </div>
+
+          <div class="action-row">
+            <button type="button" class="ghost-button" id="refresh-feishu-messages-button">刷新消息历史</button>
+          </div>
+          <div id="feishu-messages-status" class="status" aria-live="polite"></div>
+
+          <div class="stats-grid">
+            <div class="stat-chip">
+              <span class="stat-chip-label">最近记录</span>
+              <strong id="feishu-messages-total">0</strong>
+            </div>
+            <div class="stat-chip">
+              <span class="stat-chip-label">发送成功</span>
+              <strong id="feishu-messages-sent">0</strong>
+            </div>
+            <div class="stat-chip">
+              <span class="stat-chip-label">发送失败</span>
+              <strong id="feishu-messages-failed">0</strong>
+            </div>
+          </div>
+
+          <div id="feishu-messages-table-wrap" class="table-wrap empty-state">
+            当前还没有历史消息记录。
+          </div>
+        </article>
       </div>
     </section>
 
@@ -306,6 +341,6 @@
     </section>
   </main>
 
-  <script src="/static/app.js?v=20260320-log-viewer" defer></script>
+  <script src="/static/app.js?v=20260320-feishu-message-history" defer></script>
 </body>
 </html>

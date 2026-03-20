@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import json
 from typing import Any
 
 import httpx
@@ -19,6 +20,7 @@ class FeishuConfig:
     bitable_app_token: str
     bitable_table_id: str
     base_url: str = "https://open.feishu.cn"
+    chat_id: str | None = None
 
 
 class FeishuClient:
@@ -38,6 +40,7 @@ class FeishuClient:
             base_url=settings.feishu_base_url,
             bitable_app_token=settings.feishu_bitable_app_token,
             bitable_table_id=settings.feishu_bitable_table_id,
+            chat_id=settings.feishu_chat_id,
         )
 
     @classmethod
@@ -49,12 +52,14 @@ class FeishuClient:
         bitable_app_token: str | None,
         bitable_table_id: str | None,
         base_url: str | None = None,
+        chat_id: str | None = None,
     ) -> "FeishuClient":
         app_id = (app_id or "").strip()
         app_secret = (app_secret or "").strip()
         bitable_app_token = (bitable_app_token or "").strip()
         bitable_table_id = (bitable_table_id or "").strip()
         base_url = (base_url or "https://open.feishu.cn").strip()
+        chat_id = (chat_id or "").strip() or None
 
         if not app_id:
             raise FeishuConfigError("缺少 Feishu App ID")
@@ -72,6 +77,7 @@ class FeishuClient:
                 bitable_app_token=bitable_app_token,
                 bitable_table_id=bitable_table_id,
                 base_url=base_url,
+                chat_id=chat_id,
             )
         )
 
@@ -135,3 +141,25 @@ class FeishuClient:
                 break
 
         return items
+
+    async def send_text_message(self, *, text: str, chat_id: str | None = None) -> dict[str, Any]:
+        token = await self.get_tenant_access_token()
+        target_chat_id = (chat_id or self.config.chat_id or "").strip()
+        if not target_chat_id:
+            raise FeishuConfigError("缺少飞书群 chat_id")
+
+        response = await self._client.post(
+            "/open-apis/im/v1/messages",
+            headers={"Authorization": f"Bearer {token}"},
+            params={"receive_id_type": "chat_id"},
+            json={
+                "receive_id": target_chat_id,
+                "msg_type": "text",
+                "content": json.dumps({"text": text}, ensure_ascii=False),
+            },
+        )
+        response.raise_for_status()
+        payload = response.json()
+        if payload.get("code") != 0:
+            raise FeishuConfigError(payload.get("msg") or "发送飞书消息失败")
+        return payload.get("data", {})

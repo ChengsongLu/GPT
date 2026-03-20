@@ -2,6 +2,7 @@ from app.models.branch import Branch
 from app.models.commit import Commit
 from app.models.contributor import Contributor
 from app.models.daily_report import DailyReport
+from app.models.feishu_message_log import FeishuMessageLog
 from app.models.settings import AppSettings
 
 __all__ = [
@@ -10,4 +11,5 @@ __all__ = [
     "Commit",
     "Contributor",
     "DailyReport",
+    "FeishuMessageLog",
 ]

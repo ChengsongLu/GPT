@@ -1,6 +1,6 @@
 # GPT - Git Progress Tracker :）
 
-当前仓库已经完成 `Stage 0`、`Stage 1`、`Stage 2`、`Stage 4` 和 `Stage 5` 的基础能力：
+当前仓库已经完成 `Stage 0` 到 `Stage 6` 的基础能力：
 
 - FastAPI 应用入口
 - 原生 HTML + JS 工作台页面
@@ -10,6 +10,8 @@
 - 提交历史查询 API
 - 飞书连接测试与成员同步
 - 基于 LLM 的项目整体日报与分支日报生成
+- 手动将指定日期的项目整体日报和分支日报发送到飞书群
+- 前端日志页，可查看按天切分的系统日志
 - `GET /health` 健康检查
 
 ## LLM 配置
@@ -191,6 +193,13 @@ uv run python run_mock_feishu.py
 
 1. `测试飞书连接`
 2. `同步成员映射`
+
+如果要验证“发送日报到飞书群”，先确保已经生成某一天的日报，然后在日报页点击“发送到飞书群”。
+Mock Feishu 会返回模拟的消息 ID，并且提供一个查看已发送消息的接口：
+
+```bash
+curl http://127.0.0.1:19002/mock/sent-messages
+```
 
 当前 mock Feishu fixtures 位于：
 

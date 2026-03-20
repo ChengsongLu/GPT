@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -40,3 +40,27 @@ class ContributorListResponse(BaseModel):
     total_count: int
     active_count: int
     contributors: list[ContributorItem]
+
+
+class FeishuMessageLogItem(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    report_id: int | None
+    report_date: date
+    report_type: str
+    branch_name: str | None
+    chat_id: str
+    message_id: str | None
+    status: str
+    content_preview: str
+    error_detail: str | None
+    sent_at: datetime | None
+    created_at: datetime
+
+
+class FeishuMessageLogListResponse(BaseModel):
+    total_count: int
+    sent_count: int
+    failed_count: int
+    items: list[FeishuMessageLogItem]

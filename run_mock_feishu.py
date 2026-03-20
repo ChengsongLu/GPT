@@ -10,7 +10,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=19002)
     parser.add_argument("--scenario", default="feishu_basic")
-    parser.add_argument("--fail-endpoint", choices=["token", "records"], default=None)
+    parser.add_argument("--fail-endpoint", choices=["token", "records", "messages"], default=None)
     parser.add_argument("--fail-status", type=int, default=500)
     return parser.parse_args()
 

@@ -8,6 +8,7 @@ const state = {
   selectedLogDate: null,
   reportBranches: [],
   currentReportBranch: null,
+  selectedReportSent: false,
   page: 1,
   pageSize: 20,
   total: 0,
@@ -96,6 +97,10 @@ function escapeHTML(value) {
     .replaceAll("'", "&#39;");
 }
 
+function toSingleLineText(value) {
+  return String(value ?? "").replace(/\s+/g, " ").trim();
+}
+
 function updateNav() {
   document.querySelectorAll(".nav-pill").forEach((button) => {
     button.classList.toggle("is-active", button.dataset.view === state.currentView);
@@ -123,6 +128,7 @@ function bindNavigation() {
       }
       if (button.dataset.view === "feishu") {
         loadContributors();
+        loadFeishuMessageLogs();
       }
       if (button.dataset.view === "logs") {
         loadLogs();
@@ -309,6 +315,75 @@ async function loadContributors() {
   }
 }
 
+function renderFeishuMessageLogs(payload) {
+  document.querySelector("#feishu-messages-summary").textContent = String(payload.total_count);
+  document.querySelector("#feishu-messages-total").textContent = String(payload.total_count);
+  document.querySelector("#feishu-messages-sent").textContent = String(payload.sent_count);
+  document.querySelector("#feishu-messages-failed").textContent = String(payload.failed_count);
+
+  const target = document.querySelector("#feishu-messages-table-wrap");
+  if (payload.items.length === 0) {
+    target.className = "table-wrap empty-state";
+    target.innerHTML = "当前还没有历史消息记录。";
+    return;
+  }
+
+  target.className = "table-wrap";
+  target.innerHTML = `
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>发送时间</th>
+          <th>日报日期</th>
+          <th>类型</th>
+          <th>分支</th>
+          <th>群 chat_id</th>
+          <th>消息 ID</th>
+          <th>状态</th>
+          <th>内容预览</th>
+          <th>错误</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${payload.items
+          .map(
+            (item) => `
+              <tr>
+                <td>${escapeHTML(formatDate(item.sent_at || item.created_at))}</td>
+                <td>${escapeHTML(item.report_date)}</td>
+                <td>${escapeHTML(item.report_type === "project" ? "项目整体" : "分支日报")}</td>
+                <td>${escapeHTML(item.branch_name || "-")}</td>
+                <td>${escapeHTML(item.chat_id || "-")}</td>
+                <td>${escapeHTML(item.message_id || "-")}</td>
+                <td>
+                  <span class="status-pill ${item.status === "failed" ? "is-inactive" : ""}">
+                    ${item.status === "failed" ? "失败" : "成功"}
+                  </span>
+                </td>
+                <td class="message-preview-cell" title="${escapeHTML(item.content_preview || "-")}">${escapeHTML(toSingleLineText(item.content_preview || "-"))}</td>
+                <td class="message-preview-cell" title="${escapeHTML(item.error_detail || "-")}">${escapeHTML(toSingleLineText(item.error_detail || "-"))}</td>
+              </tr>
+            `,
+          )
+          .join("")}
+      </tbody>
+    </table>
+  `;
+}
+
+async function loadFeishuMessageLogs() {
+  try {
+    const payload = await requestJSON("/api/feishu-message-logs?limit=50");
+    renderFeishuMessageLogs(payload);
+    setStatus(
+      document.querySelector("#feishu-messages-status"),
+      payload.total_count > 0 ? `已加载最近 ${payload.total_count} 条消息历史` : "当前还没有历史消息记录",
+    );
+  } catch (error) {
+    setStatus(document.querySelector("#feishu-messages-status"), `加载消息历史失败：${error.message}`, true);
+  }
+}
+
 async function testGitLabConnection() {
   const form = document.querySelector("#gitlab-form");
   const resultBox = document.querySelector("#gitlab-test-result");
@@ -407,6 +482,7 @@ function renderReportItems(target, items) {
             <span>${escapeHTML(item.report_date)}</span>
             <span>${escapeHTML(item.status)}</span>
             <span>${escapeHTML(formatDate(item.created_at))}</span>
+            <span>${escapeHTML(item.sent_at ? `发送于 ${formatDate(item.sent_at)}` : "未发送")}</span>
           </div>
           <pre>${escapeHTML(item.content)}</pre>
         </article>
@@ -490,6 +566,9 @@ async function loadReportsForSelectedDate() {
       '<div class="empty-state">当前还没有分支日报。</div>';
     document.querySelector("#report-summary").textContent = "未生成";
     document.querySelector("#generate-reports-button").textContent = "重新生成选中日报";
+    document.querySelector("#send-reports-button").textContent = "发送到飞书群";
+    document.querySelector("#send-reports-button").disabled = true;
+    state.selectedReportSent = false;
     setStatus(document.querySelector("#reports-status"), "当前还没有可查看的日报日期", true);
     return;
   }
@@ -513,8 +592,14 @@ async function loadReportsForSelectedDate() {
 
     const selectedSummaryDate = state.selectedReportDate || "未选择";
     document.querySelector("#report-summary").textContent = String(selectedSummaryDate);
+    const allItems = [...projectPayload.items, ...branchPayload.items];
+    state.selectedReportSent = allItems.length > 0 && allItems.every((item) => item.status === "sent");
     document.querySelector("#generate-reports-button").textContent =
       projectPayload.items.length > 0 ? `重新生成 ${state.selectedReportDate}` : `生成 ${state.selectedReportDate}`;
+    document.querySelector("#send-reports-button").textContent = state.selectedReportSent
+      ? `重发 ${state.selectedReportDate} 到飞书群`
+      : `发送 ${state.selectedReportDate} 到飞书群`;
+    document.querySelector("#send-reports-button").disabled = allItems.length === 0;
     setStatus(
       document.querySelector("#reports-status"),
       projectPayload.items.length > 0 || branchPayload.items.length > 0
@@ -566,6 +651,36 @@ async function generateDailyReports() {
   } catch (error) {
     setStatus(document.querySelector("#reports-status"), `生成日报失败：${error.message}`, true);
     setBoxContent(document.querySelector("#report-result"), `生成失败。<br>${error.message}`, true);
+  }
+}
+
+async function sendDailyReports() {
+  if (!state.selectedReportDate) {
+    setStatus(document.querySelector("#reports-status"), "当前没有可发送的日报日期", true);
+    return;
+  }
+
+  try {
+    const actionLabel = state.selectedReportSent ? "重发" : "发送";
+    setStatus(document.querySelector("#reports-status"), `正在${actionLabel} ${state.selectedReportDate} 的日报到飞书群...`);
+    const payload = await requestJSON(
+      `/api/reports/send?report_date=${encodeURIComponent(state.selectedReportDate)}`,
+      { method: "POST" },
+    );
+    setBoxContent(
+      document.querySelector("#report-result"),
+      `日报日期：${payload.report_date}<br>目标群：${escapeHTML(payload.chat_id)}<br>发送日报数：${payload.report_count}<br>发送消息数：${payload.message_count}<br>消息 ID：${payload.message_ids.map((item) => escapeHTML(item)).join("<br>") || "无返回 ID"}`,
+    );
+    setStatus(
+      document.querySelector("#reports-status"),
+      `${payload.report_date} 的日报已发送到飞书群，共发送 ${payload.message_count} 条消息`,
+    );
+    await loadReports();
+    await loadFeishuMessageLogs();
+    selectView("reports");
+  } catch (error) {
+    setStatus(document.querySelector("#reports-status"), `发送日报失败：${error.message}`, true);
+    setBoxContent(document.querySelector("#report-result"), `发送失败。<br>${error.message}`, true);
   }
 }
 
@@ -817,9 +932,11 @@ document.addEventListener("DOMContentLoaded", async () => {
   document.querySelector("#test-gitlab-button").addEventListener("click", testGitLabConnection);
   document.querySelector("#test-feishu-button").addEventListener("click", testFeishuConnection);
   document.querySelector("#sync-feishu-button").addEventListener("click", syncFeishuContributors);
+  document.querySelector("#refresh-feishu-messages-button").addEventListener("click", loadFeishuMessageLogs);
   document.querySelector("#sync-branches-button").addEventListener("click", syncBranches);
   document.querySelector("#sync-commits-button").addEventListener("click", syncCommits);
   document.querySelector("#generate-reports-button").addEventListener("click", generateDailyReports);
+  document.querySelector("#send-reports-button").addEventListener("click", sendDailyReports);
   document.querySelector("#refresh-logs-button").addEventListener("click", loadLogs);
 
   try {
@@ -827,6 +944,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     await loadBranchesAndCommits();
     await loadReports();
     await loadContributors();
+    await loadFeishuMessageLogs();
     await loadLogs();
   } catch (error) {
     setStatus(document.querySelector("#page-status"), `初始化失败：${error.message}`, true);

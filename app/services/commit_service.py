@@ -3,16 +3,15 @@ from datetime import datetime
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.branches import sort_branches
 from app.models.branch import Branch
 from app.models.commit import Commit
 from app.schemas.commit import CommitItem, CommitListResponse
 
 
 async def list_branches(session: AsyncSession) -> list[Branch]:
-    result = await session.execute(
-        select(Branch).order_by(Branch.is_default.desc(), Branch.name.asc())
-    )
-    return list(result.scalars().all())
+    result = await session.execute(select(Branch))
+    return sort_branches(result.scalars().all())
 
 
 async def list_commits(

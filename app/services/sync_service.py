@@ -6,6 +6,7 @@ from datetime import UTC, datetime
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.branches import sort_branches
 from app.models.branch import Branch
 from app.models.commit import Commit
 from app.schemas.sync import BranchItem, BranchSyncResponse, CommitSyncResponse
@@ -43,10 +44,8 @@ async def sync_branches(session: AsyncSession) -> BranchSyncResponse:
 
     await session.commit()
 
-    refreshed = await session.execute(
-        select(Branch).order_by(Branch.is_default.desc(), Branch.name.asc())
-    )
-    rows = list(refreshed.scalars().all())
+    refreshed = await session.execute(select(Branch))
+    rows = sort_branches(refreshed.scalars().all())
     logger.info(
         "sync_branches_finished project_ref=%s synced_count=%s default_branch=%s branches=%s",
         settings.gitlab_project_ref,
@@ -77,16 +76,12 @@ async def sync_commits_with_mode(
         "full" if full_sync else "incremental",
     )
 
-    branch_result = await session.execute(
-        select(Branch).order_by(Branch.is_default.desc(), Branch.name.asc())
-    )
-    branches = list(branch_result.scalars().all())
+    branch_result = await session.execute(select(Branch))
+    branches = sort_branches(branch_result.scalars().all())
     if not branches:
         await sync_branches(session)
-        branch_result = await session.execute(
-            select(Branch).order_by(Branch.is_default.desc(), Branch.name.asc())
-        )
-        branches = list(branch_result.scalars().all())
+        branch_result = await session.execute(select(Branch))
+        branches = sort_branches(branch_result.scalars().all())
 
     now = datetime.now(UTC)
     commit_count = 0
