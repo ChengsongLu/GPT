@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from httpx import HTTPError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -8,7 +8,7 @@ from app.schemas.sync import BranchSyncResponse, CommitSyncResponse
 from app.services.feishu_client import FeishuConfigError
 from app.services.feishu_service import list_contributors, sync_feishu_contributors
 from app.services.gitlab_client import GitLabConfigError
-from app.services.sync_service import sync_branches, sync_commits
+from app.services.sync_service import sync_branches, sync_commits_with_mode
 
 router = APIRouter()
 
@@ -27,10 +27,11 @@ async def trigger_branch_sync(
 
 @router.post("/sync/commits", response_model=CommitSyncResponse)
 async def trigger_commit_sync(
+    full_sync: bool = Query(default=True),
     session: AsyncSession = Depends(get_db_session),
 ) -> CommitSyncResponse:
     try:
-        return await sync_commits(session)
+        return await sync_commits_with_mode(session, full_sync=full_sync)
     except GitLabConfigError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except HTTPError as exc:

@@ -1,6 +1,6 @@
 # GPT - Git Progress Tracker :）
 
-当前仓库已经完成 `Stage 0`、`Stage 1`、`Stage 2` 和 `Stage 4` 的基础能力：
+当前仓库已经完成 `Stage 0`、`Stage 1`、`Stage 2`、`Stage 4` 和 `Stage 5` 的基础能力：
 
 - FastAPI 应用入口
 - 原生 HTML + JS 工作台页面
@@ -9,7 +9,45 @@
 - GitLab 分支与 commit 同步
 - 提交历史查询 API
 - 飞书连接测试与成员同步
+- 基于 LLM 的项目整体日报与分支日报生成
 - `GET /health` 健康检查
+
+## LLM 配置
+
+日报生成现在默认依赖 LLM。配置方式：
+
+1. 复制项目根目录下的 [.env.example](/Users/lcs/Projects/GPT/.env.example) 为 `.env`
+2. 按你使用的 provider 填入配置
+3. `.env` 已被 [.gitignore](/Users/lcs/Projects/GPT/.gitignore) 忽略，不会提交到 Git 仓库
+
+支持的 provider：
+
+- `openai`
+- `anthropic`
+
+最小示例：
+
+```env
+LLM_PROVIDER=openai
+OPENAI_API_KEY=your-key
+OPENAI_BASE_URL=https://api.openai.com/v1
+OPENAI_MODEL=gpt-4.1-mini
+```
+
+或者：
+
+```env
+LLM_PROVIDER=anthropic
+ANTHROPIC_API_KEY=your-key
+ANTHROPIC_BASE_URL=https://api.anthropic.com
+ANTHROPIC_MODEL=claude-3-5-sonnet-latest
+```
+
+可选公共参数：
+
+- `LLM_TEMPERATURE`
+- `LLM_MAX_TOKENS`
+- `LLM_TIMEOUT_SECONDS`
 
 ## 本地启动
 
@@ -67,9 +105,9 @@ uv run python run_mock_gitlab.py --scenario many_commits
 
 支持的基础场景：
 
-- `basic`：最小可用同步链路
+- `basic`：最小可用同步链路，包含多天 commits
 - `no_commits`：验证空数据表现
-- `many_commits`：验证分页、筛选和多分支展示
+- `many_commits`：验证分页、筛选、多分支展示和跨天 commits
 
 还支持注入异常和延迟：
 
@@ -111,8 +149,9 @@ uv run python run_mock_gitlab.py --scenario basic --fail-endpoint commits --fail
   - 需要对目标项目至少有读取权限
 - `Project ID 或 group/project`
   - 目标项目标识
-  - 可以填数字 ID，例如 `12345`
-  - 也可以填路径，例如 `group/project`
+  - 可以填 GitLab 提供的数字项目 ID，例如 `12345`
+  - 也可以填 GitLab 项目的 `path_with_namespace`，例如 `group/project`
+  - 这里不是本系统自定义的任意别名，而是 GitLab 项目自身的标识
 - `同步间隔（分钟)`
   - 后续定时同步使用
 - `时区`
@@ -123,6 +162,12 @@ uv run python run_mock_gitlab.py --scenario basic --fail-endpoint commits --fail
 - `mock/fixtures/basic/`
 - `mock/fixtures/no_commits/`
 - `mock/fixtures/many_commits/`
+
+其中 `basic` 和 `many_commits` 现在都包含多天 commits，便于验证：
+
+- 提交历史分页与筛选
+- 日报只统计“昨天”的数据
+- 历史 commit 仍可在页面中继续查看
 
 ## Mock Feishu
 

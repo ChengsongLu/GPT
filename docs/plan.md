@@ -27,6 +27,7 @@
   - `many_commits`
   - `feishu_basic`
 - 支持通过启动参数注入慢响应和接口错误，验证容错逻辑
+- `basic` 和 `many_commits` 场景都应包含多天 commits，便于验证“历史展示”和“昨日日报统计范围”
 
 建议使用方式：
 
@@ -230,6 +231,7 @@ flowchart LR
 - 计算昨天时间范围，固定 `Asia/Shanghai`
 - 查询昨天全部 commit
 - 关联 `contributors`
+- 将结构化事实交给 LLM 生成日报文案
 - 生成两层日报：
   - 项目整体日报
   - 分支日报
@@ -239,16 +241,12 @@ flowchart LR
   - `GET /api/reports/project-daily`
   - `POST /api/reports/generate-daily`
 
-建议先分两步实现：
-
-1. 先做规则版摘要
-2. 再接 LLM 优化表达
-
 完成标志：
 
 - 手动触发后可以生成昨天的项目整体日报
 - 同时生成对应的分支日报
 - 日报能保存到数据库
+- 日报内容由 LLM 生成，且不脱离给定 commit 事实
 
 验证方式：
 
@@ -424,6 +422,6 @@ flowchart LR
 实现时优先保证以下三点：
 
 - 不要一开始追求复杂 UI，先保证页面可用
-- 日报先做规则版摘要，LLM 优化放在后面接入
+- 日报先做结构化事实聚合，再交给 LLM 生成文案
 - 所有外部集成都先提供“测试连接”接口，避免联调时排查困难
 - 对每个 stage 保留至少一个稳定可复现的 mock 验证场景

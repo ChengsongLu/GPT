@@ -1,6 +1,15 @@
 {
   "main": [
     {
+      "id": "aaaaaaaa00000000",
+      "author_name": "Alice",
+      "author_email": "alice@example.com",
+      "committed_date": "2026-03-18T09:20:00Z",
+      "title": "Bootstrap dashboard shell",
+      "message": "Bootstrap dashboard shell",
+      "web_url": "http://127.0.0.1:19001/group/project/-/commit/aaaaaaaa00000000"
+    },
+    {
       "id": "aaaaaaaa11111111",
       "author_name": "Alice",
       "author_email": "alice@example.com",
@@ -17,9 +26,27 @@
       "title": "Fix API timeout",
       "message": "Fix API timeout",
       "web_url": "http://127.0.0.1:19001/group/project/-/commit/bbbbbbbb22222222"
+    },
+    {
+      "id": "bbbbbbbb11111111",
+      "author_name": "Bob",
+      "author_email": "bob@example.com",
+      "committed_date": "2026-03-18T06:45:00Z",
+      "title": "Wire project config endpoint",
+      "message": "Wire project config endpoint",
+      "web_url": "http://127.0.0.1:19001/group/project/-/commit/bbbbbbbb11111111"
     }
   ],
   "develop": [
+    {
+      "id": "cccccccc22222222",
+      "author_name": "Carol",
+      "author_email": "carol@example.com",
+      "committed_date": "2026-03-18T11:15:00Z",
+      "title": "Add sync diagnostics",
+      "message": "Add sync diagnostics",
+      "web_url": "http://127.0.0.1:19001/group/project/-/commit/cccccccc22222222"
+    },
     {
       "id": "cccccccc33333333",
       "author_name": "Carol",

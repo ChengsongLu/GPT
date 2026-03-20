@@ -1,6 +1,15 @@
 {
   "main": [
     {
+      "id": "m000000000000000",
+      "author_name": "Alice",
+      "author_email": "alice@example.com",
+      "committed_date": "2026-03-18T16:22:00Z",
+      "title": "Set up dashboard release checklist",
+      "message": "Set up dashboard release checklist",
+      "web_url": "http://127.0.0.1:19001/group/busy-project/-/commit/m000000000000000"
+    },
+    {
       "id": "m111111111111111",
       "author_name": "Alice",
       "author_email": "alice@example.com",
@@ -26,9 +35,27 @@
       "title": "Refine report summary structure",
       "message": "Refine report summary structure",
       "web_url": "http://127.0.0.1:19001/group/busy-project/-/commit/m333333333333333"
+    },
+    {
+      "id": "m444444444444444",
+      "author_name": "Dana",
+      "author_email": "dana@example.com",
+      "committed_date": "2026-03-17T09:48:00Z",
+      "title": "Draft reporting requirement notes",
+      "message": "Draft reporting requirement notes",
+      "web_url": "http://127.0.0.1:19001/group/busy-project/-/commit/m444444444444444"
     }
   ],
   "develop": [
+    {
+      "id": "d000000000000000",
+      "author_name": "Evan",
+      "author_email": "evan@example.com",
+      "committed_date": "2026-03-18T18:16:00Z",
+      "title": "Seed async job coordinator",
+      "message": "Seed async job coordinator",
+      "web_url": "http://127.0.0.1:19001/group/busy-project/-/commit/d000000000000000"
+    },
     {
       "id": "d111111111111111",
       "author_name": "Evan",
@@ -55,9 +82,27 @@
       "title": "Harden sync retries",
       "message": "Harden sync retries",
       "web_url": "http://127.0.0.1:19001/group/busy-project/-/commit/d333333333333333"
+    },
+    {
+      "id": "d444444444444444",
+      "author_name": "Alice",
+      "author_email": "alice@example.com",
+      "committed_date": "2026-03-17T14:30:00Z",
+      "title": "Sketch scheduler fallback path",
+      "message": "Sketch scheduler fallback path",
+      "web_url": "http://127.0.0.1:19001/group/busy-project/-/commit/d444444444444444"
     }
   ],
   "feature/reporting": [
+    {
+      "id": "f000000000000000",
+      "author_name": "Carol",
+      "author_email": "carol@example.com",
+      "committed_date": "2026-03-18T08:05:00Z",
+      "title": "Outline report digest sections",
+      "message": "Outline report digest sections",
+      "web_url": "http://127.0.0.1:19001/group/busy-project/-/commit/f000000000000000"
+    },
     {
       "id": "f111111111111111",
       "author_name": "Carol",

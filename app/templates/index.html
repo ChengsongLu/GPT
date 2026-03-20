@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{{ page_title }}</title>
-  <link rel="stylesheet" href="/static/styles.css">
+  <link rel="stylesheet" href="/static/styles.css?v=20260320-log-viewer">
 </head>
 <body>
   <main class="shell">
@@ -12,8 +12,8 @@
       <p class="eyebrow">GitLab Commit Tracker</p>
       <h1>Git Progress Tracker</h1>
       <p>
-        当前版本已覆盖 Stage 2 和 Stage 4：可以保存 GitLab / 飞书配置、测试连接、
-        同步所有分支 commits，并从飞书多维表格同步成员映射。
+        当前版本已覆盖 Stage 2、Stage 4 和 Stage 5：可以保存 GitLab / 飞书配置、测试连接、
+        同步所有分支 commits、从飞书多维表格同步成员映射，并基于昨天的 commits 生成项目整体日报和分支日报。
       </p>
       <div id="page-status" class="page-status" aria-live="polite"></div>
     </section>
@@ -23,6 +23,7 @@
       <button class="nav-pill" data-view="commits" type="button">提交历史</button>
       <button class="nav-pill" data-view="reports" type="button">日报</button>
       <button class="nav-pill" data-view="feishu" type="button">飞书</button>
+      <button class="nav-pill" data-view="logs" type="button">日志</button>
     </nav>
 
     <section id="view-config" class="view is-active">
@@ -78,22 +79,6 @@
           </form>
         </article>
 
-        <article class="card">
-          <div class="card-head">
-            <div>
-              <h2>同步控制</h2>
-              <p>先同步分支，再同步该仓库所有分支的 commit。重复同步会按已有记录去重。</p>
-            </div>
-            <span class="badge">Sync</span>
-          </div>
-
-          <div class="stack-actions">
-            <button type="button" id="sync-branches-button">同步分支</button>
-            <button type="button" id="sync-commits-button">同步 commits</button>
-          </div>
-          <div id="sync-status" class="status" aria-live="polite"></div>
-          <div id="sync-result" class="detail-box empty">尚未执行同步。</div>
-        </article>
       </div>
     </section>
 
@@ -106,6 +91,16 @@
           </div>
           <span id="commit-summary" class="badge">未加载</span>
         </div>
+
+        <div class="action-row">
+          <button type="button" id="sync-branches-button">同步分支</button>
+          <button type="button" id="sync-commits-button">同步 commits</button>
+        </div>
+        <div class="field-tip">
+          手动“同步 commits”会重新扫描仓库所有分支的历史提交并去重，适合在 mock 数据调整后补齐更早日期的历史。
+        </div>
+        <div id="sync-status" class="status" aria-live="polite"></div>
+        <div id="sync-result" class="detail-box empty">尚未执行同步。</div>
 
         <div id="branch-tabs" class="branch-tabs">
           <div class="empty-state">尚未同步分支。</div>
@@ -152,12 +147,45 @@
         <div class="card-head">
           <div>
             <h2>日报</h2>
-            <p>这里会在后续 stage 接入项目整体日报与按分支日报。</p>
+            <p>按有 commits 的历史日期切换查看项目整体日报和分支日报，并支持重生成当前选中日期的日报。</p>
           </div>
-          <span class="badge soft">Stage 5</span>
+          <span id="report-summary" class="badge soft">未生成</span>
         </div>
-        <div class="detail-box empty">
-          当前还未接入日报生成。下一阶段会基于昨天的 commits 生成项目整体总结和分支摘要。
+
+        <div class="report-section">
+          <h3>日报日期</h3>
+          <label>
+            选择日期
+            <select id="report-date-select">
+              <option value="">当前还没有可查看的日报日期</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="action-row">
+          <button type="button" id="generate-reports-button">重新生成选中日报</button>
+        </div>
+        <div id="reports-status" class="status" aria-live="polite"></div>
+
+        <section class="report-section">
+          <h3>项目整体日报</h3>
+          <div id="project-reports" class="report-list">
+            <div class="empty-state">当前还没有项目整体日报。</div>
+          </div>
+        </section>
+
+        <section class="report-section">
+          <h3>分支日报</h3>
+          <div id="report-branch-tabs" class="branch-tabs">
+            <div class="empty-state">当前还没有分支日报。</div>
+          </div>
+          <div id="branch-reports" class="report-list">
+            <div class="empty-state">当前还没有分支日报。</div>
+          </div>
+        </section>
+
+        <div id="report-result" class="detail-box empty">
+          选择一个有 commits 的日期后，这里会显示该日期日报的生成结果。重新生成会覆盖当天已有日报。
         </div>
       </article>
     </section>
@@ -239,8 +267,45 @@
         </article>
       </div>
     </section>
+
+    <section id="view-logs" class="view">
+      <article class="card">
+        <div class="card-head">
+          <div>
+            <h2>日志</h2>
+            <p>查看系统请求日志和关键接口的中间过程日志，日志文件按上海时间按天切分。</p>
+          </div>
+          <span id="logs-summary" class="badge soft">未加载</span>
+        </div>
+
+        <div class="filter-grid">
+          <label>
+            日志日期
+            <select id="log-date-select">
+              <option value="">当前还没有日志文件</option>
+            </select>
+          </label>
+          <label>
+            查看行数
+            <select id="log-line-limit">
+              <option value="100">最近 100 行</option>
+              <option value="200" selected>最近 200 行</option>
+              <option value="500">最近 500 行</option>
+              <option value="1000">最近 1000 行</option>
+            </select>
+          </label>
+          <div class="action-row">
+            <button type="button" id="refresh-logs-button">刷新日志</button>
+          </div>
+        </div>
+
+        <div id="logs-status" class="status" aria-live="polite"></div>
+        <div id="logs-meta" class="detail-box empty">选择日志日期后，这里会显示日志文件信息。</div>
+        <pre id="logs-content" class="log-viewer empty-state">当前还没有日志内容。</pre>
+      </article>
+    </section>
   </main>
 
-  <script src="/static/app.js" defer></script>
+  <script src="/static/app.js?v=20260320-log-viewer" defer></script>
 </body>
 </html>

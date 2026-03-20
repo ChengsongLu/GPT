@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from datetime import UTC, datetime
 
 from sqlalchemy import select
@@ -11,6 +12,8 @@ from app.schemas.sync import BranchItem, BranchSyncResponse, CommitSyncResponse
 from app.services.gitlab_client import GitLabClient
 from app.services.settings_service import get_or_create_settings
 
+logger = logging.getLogger(__name__)
+
 
 def parse_gitlab_datetime(value: str | None) -> datetime | None:
     if not value:
@@ -20,6 +23,7 @@ def parse_gitlab_datetime(value: str | None) -> datetime | None:
 
 async def sync_branches(session: AsyncSession) -> BranchSyncResponse:
     settings = await get_or_create_settings(session)
+    logger.info("sync_branches_started project_ref=%s", settings.gitlab_project_ref)
 
     async with GitLabClient.from_settings(settings) as client:
         project = await client.fetch_project()
@@ -43,6 +47,13 @@ async def sync_branches(session: AsyncSession) -> BranchSyncResponse:
         select(Branch).order_by(Branch.is_default.desc(), Branch.name.asc())
     )
     rows = list(refreshed.scalars().all())
+    logger.info(
+        "sync_branches_finished project_ref=%s synced_count=%s default_branch=%s branches=%s",
+        settings.gitlab_project_ref,
+        len(rows),
+        project.get("default_branch"),
+        [branch.name for branch in rows],
+    )
     return BranchSyncResponse(
         synced_count=len(rows),
         default_branch=project.get("default_branch"),
@@ -51,23 +62,27 @@ async def sync_branches(session: AsyncSession) -> BranchSyncResponse:
 
 
 async def sync_commits(session: AsyncSession) -> CommitSyncResponse:
+    return await sync_commits_with_mode(session, full_sync=False)
+
+
+async def sync_commits_with_mode(
+    session: AsyncSession,
+    *,
+    full_sync: bool,
+) -> CommitSyncResponse:
     settings = await get_or_create_settings(session)
+    logger.info(
+        "sync_commits_started project_ref=%s mode=%s",
+        settings.gitlab_project_ref,
+        "full" if full_sync else "incremental",
+    )
 
     branch_result = await session.execute(
         select(Branch).order_by(Branch.is_default.desc(), Branch.name.asc())
     )
     branches = list(branch_result.scalars().all())
     if not branches:
-        branch_sync = await sync_branches(session)
-        branches = [
-            Branch(
-                id=item.id,
-                name=item.name,
-                is_default=item.is_default,
-                last_synced_at=item.last_synced_at,
-            )
-            for item in branch_sync.branches
-        ]
+        await sync_branches(session)
         branch_result = await session.execute(
             select(Branch).order_by(Branch.is_default.desc(), Branch.name.asc())
         )
@@ -78,7 +93,14 @@ async def sync_commits(session: AsyncSession) -> CommitSyncResponse:
 
     async with GitLabClient.from_settings(settings) as client:
         for branch in branches:
-            async for payload in client.iter_commits(branch.name, since=branch.last_synced_at):
+            since = None if full_sync else branch.last_synced_at
+            branch_added = 0
+            logger.info(
+                "sync_commits_branch_started branch=%s since=%s",
+                branch.name,
+                since.isoformat() if since else "full-history",
+            )
+            async for payload in client.iter_commits(branch.name, since=since):
                 sha = payload["id"]
                 existing = await session.execute(
                     select(Commit.id).where(
@@ -102,11 +124,26 @@ async def sync_commits(session: AsyncSession) -> CommitSyncResponse:
                 )
                 session.add(commit)
                 commit_count += 1
+                branch_added += 1
 
             branch.last_synced_at = now
             session.add(branch)
             await session.commit()
+            logger.info(
+                "sync_commits_branch_finished branch=%s added_commits=%s synced_at=%s",
+                branch.name,
+                branch_added,
+                now.isoformat(),
+            )
 
+    logger.info(
+        "sync_commits_finished project_ref=%s mode=%s branch_count=%s commit_count=%s synced_at=%s",
+        settings.gitlab_project_ref,
+        "full" if full_sync else "incremental",
+        len(branches),
+        commit_count,
+        now.isoformat(),
+    )
     return CommitSyncResponse(
         branch_count=len(branches),
         commit_count=commit_count,

@@ -183,7 +183,8 @@ label {
   font-size: 0.95rem;
 }
 
-input {
+input,
+select {
   width: 100%;
   border: 1px solid var(--line);
   border-radius: 14px;
@@ -193,7 +194,8 @@ input {
   font: inherit;
 }
 
-input:focus {
+input:focus,
+select:focus {
   outline: 2px solid rgba(11, 107, 97, 0.18);
   outline-offset: 1px;
 }
@@ -331,6 +333,37 @@ input:focus {
   gap: 14px;
 }
 
+.report-section {
+  display: grid;
+  gap: 12px;
+}
+
+.report-section h3 {
+  margin: 6px 0 0;
+  font-size: 1.08rem;
+}
+
+.report-list {
+  display: grid;
+  gap: 14px;
+}
+
+.report-item {
+  border: 1px solid rgba(216, 207, 191, 0.95);
+  border-radius: 18px;
+  padding: 18px;
+  background: rgba(255, 255, 255, 0.58);
+}
+
+.report-item pre {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font: inherit;
+  color: var(--text);
+  line-height: 1.7;
+}
+
 .commit-item {
   border: 1px solid rgba(216, 207, 191, 0.95);
   border-radius: 18px;
@@ -367,6 +400,23 @@ code {
   border-radius: 999px;
   background: rgba(11, 107, 97, 0.12);
   color: var(--accent-strong);
+}
+
+.log-viewer {
+  min-height: 420px;
+  max-height: 70vh;
+  overflow: auto;
+  margin: 0;
+  padding: 18px;
+  border: 1px solid rgba(8, 23, 22, 0.9);
+  border-radius: 18px;
+  background: #0f1717;
+  color: #d8ece7;
+  font-family: "SFMono-Regular", "Menlo", "Consolas", monospace;
+  font-size: 0.88rem;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 @media (max-width: 720px) {
