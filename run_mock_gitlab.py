@@ -8,7 +8,7 @@ from mock.gitlab_server import FIXTURES_ROOT, create_mock_gitlab_app
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Run a reusable local mock GitLab server.")
     parser.add_argument("--host", default="127.0.0.1")
-    parser.add_argument("--port", type=int, default=9001)
+    parser.add_argument("--port", type=int, default=19001)
     parser.add_argument("--scenario", default="basic")
     parser.add_argument("--delay-ms", type=int, default=0)
     parser.add_argument("--fail-endpoint", choices=["project", "branches", "commits"], default=None)

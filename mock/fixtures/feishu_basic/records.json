@@ -1,0 +1,28 @@
+{
+  "items": [
+    {
+      "record_id": "rec_alice",
+      "fields": {
+        "开发者姓名": "Alice",
+        "GitLab 用户名": "alice",
+        "负责组件": "Dashboard"
+      }
+    },
+    {
+      "record_id": "rec_bob",
+      "fields": {
+        "开发者姓名": "Bob",
+        "GitLab 用户名": "bob",
+        "负责组件": "Sync"
+      }
+    },
+    {
+      "record_id": "rec_carol",
+      "fields": {
+        "开发者姓名": "Carol",
+        "GitLab 用户名": "carol",
+        "负责组件": "Reporting"
+      }
+    }
+  ]
+}

@@ -1,6 +1,6 @@
 # GPT - Git Progress Tracker :）
 
-当前仓库已经完成 `Stage 0`、`Stage 1` 和 `Stage 2` 的基础能力：
+当前仓库已经完成 `Stage 0`、`Stage 1`、`Stage 2` 和 `Stage 4` 的基础能力：
 
 - FastAPI 应用入口
 - 原生 HTML + JS 工作台页面
@@ -8,6 +8,7 @@
 - GitLab / 飞书配置读写 API
 - GitLab 分支与 commit 同步
 - 提交历史查询 API
+- 飞书连接测试与成员同步
 - `GET /health` 健康检查
 
 ## 本地启动
@@ -24,11 +25,29 @@ uv run uvicorn app.main:app --reload
 uv run python run_backend.py
 ```
 
+如果你想一键启动后端和两个 mock 服务：
+
+```bash
+bash run_stack.sh
+```
+
+终止这三个服务：
+
+```bash
+bash run_stack.sh -e
+```
+
 说明：
 
 - 当前项目只有一个 FastAPI 服务
 - 这个服务同时托管后端 API 和前端页面
 - 启动后直接使用控制台输出的地址访问页面
+- `run_stack.sh` 会把 PID 和日志写到 `.runtime/`
+- `run_stack.sh` 优先使用 `.venv/bin/python`，也可以通过 `PYTHON_BIN` 覆盖解释器
+- `run_stack.sh` 会同时启动：
+  - 后端：`http://127.0.0.1:18000`
+  - Mock GitLab：`http://127.0.0.1:19001`
+  - Mock Feishu：`http://127.0.0.1:19002`
 
 ## Mock GitLab
 
@@ -64,7 +83,7 @@ uv run python run_mock_gitlab.py --scenario basic --fail-endpoint commits --fail
 1. 启动 `run_mock_gitlab.py`
 2. 启动主应用
 3. 在 GitLab 配置页中填写：
-   - `GitLab Base URL`：`http://127.0.0.1:9001`
+   - `GitLab Base URL`：`http://127.0.0.1:19001`
    - `Personal Access Token`：填任意非空字符串，例如 `mock-token`
    - `Project ID 或 group/project`：使用对应场景中的 `path_with_namespace`
 4. 点击“测试连接”、“同步分支”、“同步 commits”
@@ -72,7 +91,7 @@ uv run python run_mock_gitlab.py --scenario basic --fail-endpoint commits --fail
 常用 mock 场景对应值：
 
 - `basic`
-  - `GitLab Base URL`：`http://127.0.0.1:9001`
+  - `GitLab Base URL`：`http://127.0.0.1:19001`
   - `Personal Access Token`：`mock-token`
   - `Project ID 或 group/project`：`group/project`
 - `no_commits`
@@ -105,10 +124,58 @@ uv run python run_mock_gitlab.py --scenario basic --fail-endpoint commits --fail
 - `mock/fixtures/no_commits/`
 - `mock/fixtures/many_commits/`
 
+## Mock Feishu
+
+项目内也提供了可复用的 Mock Feishu 服务，用于验证飞书多维表格成员同步。
+
+启动：
+
+```bash
+uv run python run_mock_feishu.py
+```
+
+配置页面中可填写：
+
+- `Feishu Base URL`：`http://127.0.0.1:19002`
+- `App ID`：任意非空字符串，例如 `mock-app-id`
+- `App Secret`：任意非空字符串，例如 `mock-app-secret`
+- `多维表格 App Token`：任意非空字符串，例如 `mock-bitable-app`
+- `Table ID`：任意非空字符串，例如 `mock-table`
+
+然后点击：
+
+1. `测试飞书连接`
+2. `同步成员映射`
+
+当前 mock Feishu fixtures 位于：
+
+- `mock/fixtures/feishu_basic/`
+
+## 真实 Feishu 配置说明
+
+- `App ID`
+  - 飞书自建应用的 App ID
+- `App Secret`
+  - 飞书自建应用的 App Secret
+- `Feishu Base URL`
+  - 默认使用 `https://open.feishu.cn`
+- `多维表格 App Token`
+  - 目标多维表格所属应用的 App Token
+- `Table ID`
+  - 目标数据表的 Table ID
+- `群 chat_id`
+  - 后续发送日报时使用
+
+当前成员字段约定：
+
+- `开发者姓名`
+- `GitLab 用户名`
+- `负责组件`
+
 启动后访问：
 
-- 首页：`http://127.0.0.1:8000/`
-- 健康检查：`http://127.0.0.1:8000/health`
+- 首页：`http://127.0.0.1:18000/`
+- 健康检查：`http://127.0.0.1:18000/health`
 
 首次启动会自动创建数据库文件：
 

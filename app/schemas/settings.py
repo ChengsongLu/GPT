@@ -20,6 +20,7 @@ class GitLabTestPayload(BaseModel):
 class FeishuSettingsPayload(BaseModel):
     feishu_app_id: str = Field(min_length=1)
     feishu_app_secret: str = Field(min_length=1)
+    feishu_base_url: str = Field(default="https://open.feishu.cn", min_length=1)
     feishu_bitable_app_token: str = Field(min_length=1)
     feishu_bitable_table_id: str = Field(min_length=1)
     feishu_chat_id: str = Field(min_length=1)
@@ -36,6 +37,7 @@ class AppSettingsRead(BaseModel):
     timezone: str
     feishu_app_id: str | None
     feishu_app_secret: str | None
+    feishu_base_url: str | None
     feishu_bitable_app_token: str | None
     feishu_bitable_table_id: str | None
     feishu_chat_id: str | None

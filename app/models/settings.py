@@ -17,6 +17,7 @@ class AppSettings(Base):
     timezone: Mapped[str] = mapped_column(String(100), default="Asia/Shanghai", nullable=False)
     feishu_app_id: Mapped[str | None] = mapped_column(String(255))
     feishu_app_secret: Mapped[str | None] = mapped_column(String(255))
+    feishu_base_url: Mapped[str | None] = mapped_column(String(500))
     feishu_bitable_app_token: Mapped[str | None] = mapped_column(String(255))
     feishu_bitable_table_id: Mapped[str | None] = mapped_column(String(255))
     feishu_chat_id: Mapped[str | None] = mapped_column(String(255))

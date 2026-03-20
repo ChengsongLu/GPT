@@ -3,6 +3,7 @@ from httpx import HTTPError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_db_session
+from app.schemas.feishu import FeishuConnectionResult, FeishuTestPayload
 from app.schemas.settings import (
     AppSettingsRead,
     FeishuSettingsPayload,
@@ -10,6 +11,8 @@ from app.schemas.settings import (
     GitLabSettingsPayload,
     GitLabTestPayload,
 )
+from app.services.feishu_client import FeishuClient, FeishuConfigError
+from app.services.feishu_service import test_feishu_connection_from_settings
 from app.services.gitlab_client import GitLabClient, GitLabConfigError
 from app.services.settings_service import get_or_create_settings, update_settings
 
@@ -71,3 +74,32 @@ async def test_gitlab_connection(
         default_branch=project.get("default_branch"),
         web_url=project.get("web_url"),
     )
+
+
+@router.post("/settings/test-feishu", response_model=FeishuConnectionResult)
+async def test_feishu_connection(
+    payload: FeishuTestPayload | None = Body(default=None),
+    session: AsyncSession = Depends(get_db_session),
+) -> FeishuConnectionResult:
+    try:
+        if payload is None:
+            return await test_feishu_connection_from_settings(session)
+
+        async with FeishuClient.from_values(
+            app_id=payload.feishu_app_id,
+            app_secret=payload.feishu_app_secret,
+            base_url=payload.feishu_base_url,
+            bitable_app_token=payload.feishu_bitable_app_token,
+            bitable_table_id=payload.feishu_bitable_table_id,
+        ) as client:
+            records = await client.list_records(page_size=1)
+            return FeishuConnectionResult(
+                ok=True,
+                app_token=client.config.bitable_app_token,
+                table_id=client.config.bitable_table_id,
+                sample_record_count=len(records),
+            )
+    except FeishuConfigError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except HTTPError as exc:
+        raise HTTPException(status_code=502, detail=f"飞书请求失败: {exc}") from exc

@@ -12,8 +12,8 @@
       <p class="eyebrow">GitLab Commit Tracker</p>
       <h1>Git Progress Tracker</h1>
       <p>
-        当前版本已覆盖 Stage 2：可以保存唯一 GitLab 仓库配置、测试连接、同步所有分支与 commits，
-        并在前端按分支查看提交历史。
+        当前版本已覆盖 Stage 2 和 Stage 4：可以保存 GitLab / 飞书配置、测试连接、
+        同步所有分支 commits，并从飞书多维表格同步成员映射。
       </p>
       <div id="page-status" class="page-status" aria-live="polite"></div>
     </section>
@@ -42,7 +42,7 @@
               <input type="url" name="gitlab_base_url" placeholder="https://gitlab.example.com" required>
             </label>
             <div class="field-tip">
-              Mock 场景填 `http://127.0.0.1:9001`。真实 GitLab 填你的站点地址，例如 `https://gitlab.example.com`。
+              Mock 场景填 `http://127.0.0.1:19001`。真实 GitLab 填你的站点地址，例如 `https://gitlab.example.com`。
             </div>
             <label>
               Personal Access Token
@@ -163,40 +163,81 @@
     </section>
 
     <section id="view-feishu" class="view">
-      <article class="card">
-        <div class="card-head">
-          <div>
-            <h2>飞书配置</h2>
-            <p>保存飞书 App、多维表格和群 `chat_id`，为后续成员同步和日报发送做准备。</p>
+      <div class="grid">
+        <article class="card">
+          <div class="card-head">
+            <div>
+              <h2>飞书配置</h2>
+              <p>保存飞书 App、多维表格和群 `chat_id`，为后续成员同步和日报发送做准备。</p>
+            </div>
+            <span class="badge soft">Stage 4+</span>
           </div>
-          <span class="badge soft">Stage 4+</span>
-        </div>
 
-        <form id="feishu-form">
-          <label>
-            App ID
-            <input type="text" name="feishu_app_id" placeholder="cli_xxx" required>
-          </label>
-          <label>
-            App Secret
-            <input type="password" name="feishu_app_secret" placeholder="secret" required>
-          </label>
-          <label>
-            多维表格 App Token
-            <input type="text" name="feishu_bitable_app_token" placeholder="bascn..." required>
-          </label>
-          <label>
-            Table ID
-            <input type="text" name="feishu_bitable_table_id" placeholder="tbl..." required>
-          </label>
-          <label>
-            群 chat_id
-            <input type="text" name="feishu_chat_id" placeholder="oc_xxx" required>
-          </label>
-          <button type="submit">保存飞书配置</button>
-          <div id="feishu-status" class="status" aria-live="polite"></div>
-        </form>
-      </article>
+          <form id="feishu-form">
+            <label>
+              App ID
+              <input type="text" name="feishu_app_id" placeholder="cli_xxx" required>
+            </label>
+            <label>
+              App Secret
+              <input type="password" name="feishu_app_secret" placeholder="secret" required>
+            </label>
+            <label>
+              Feishu Base URL
+              <input type="url" name="feishu_base_url" placeholder="https://open.feishu.cn" value="https://open.feishu.cn" required>
+            </label>
+            <div class="field-tip">
+              真实飞书默认使用 `https://open.feishu.cn`。如果使用本地 mock Feishu，请改成 `http://127.0.0.1:19002`。
+            </div>
+            <label>
+              多维表格 App Token
+              <input type="text" name="feishu_bitable_app_token" placeholder="bascn..." required>
+            </label>
+            <label>
+              Table ID
+              <input type="text" name="feishu_bitable_table_id" placeholder="tbl..." required>
+            </label>
+            <label>
+              群 chat_id
+              <input type="text" name="feishu_chat_id" placeholder="oc_xxx" required>
+            </label>
+            <div class="action-row">
+              <button type="submit">保存飞书配置</button>
+              <button type="button" class="ghost-button" id="test-feishu-button">测试飞书连接</button>
+              <button type="button" class="ghost-button" id="sync-feishu-button">同步成员映射</button>
+            </div>
+            <div id="feishu-status" class="status" aria-live="polite"></div>
+            <div id="feishu-result" class="detail-box empty">尚未测试飞书连接。</div>
+          </form>
+        </article>
+
+        <article class="card">
+          <div class="card-head">
+            <div>
+              <h2>成员映射</h2>
+              <p>这里结构化展示当前已同步的开发者、GitLab 用户名、负责组件和状态。</p>
+            </div>
+            <span id="contributors-summary" class="badge">0 / 0</span>
+          </div>
+
+          <div id="contributors-status" class="status" aria-live="polite"></div>
+
+          <div class="stats-grid">
+            <div class="stat-chip">
+              <span class="stat-chip-label">总成员</span>
+              <strong id="contributors-total">0</strong>
+            </div>
+            <div class="stat-chip">
+              <span class="stat-chip-label">激活成员</span>
+              <strong id="contributors-active">0</strong>
+            </div>
+          </div>
+
+          <div id="contributors-table-wrap" class="table-wrap empty-state">
+            尚未同步成员映射。
+          </div>
+        </article>
+      </div>
     </section>
   </main>
 

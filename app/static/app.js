@@ -66,6 +66,15 @@ function toISOOrNull(value) {
   return Number.isNaN(date.getTime()) ? null : date.toISOString();
 }
 
+function escapeHTML(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
 function updateNav() {
   document.querySelectorAll(".nav-pill").forEach((button) => {
     button.classList.toggle("is-active", button.dataset.view === state.currentView);
@@ -87,6 +96,9 @@ function bindNavigation() {
       selectView(button.dataset.view);
       if (button.dataset.view === "commits") {
         loadBranchesAndCommits();
+      }
+      if (button.dataset.view === "feishu") {
+        loadContributors();
       }
     });
   });
@@ -129,6 +141,144 @@ async function saveFeishuSettings(event) {
     setStatus(document.querySelector("#feishu-status"), "飞书配置已保存");
   } catch (error) {
     setStatus(document.querySelector("#feishu-status"), `保存失败：${error.message}`, true);
+  }
+}
+
+async function testFeishuConnection() {
+  const form = document.querySelector("#feishu-form");
+  const resultBox = document.querySelector("#feishu-result");
+  const status = document.querySelector("#feishu-status");
+  const payload = formDataToJSON(form);
+
+  if (!String(payload.feishu_app_id || "").trim()) {
+    setStatus(status, "连接失败：请先填写 Feishu App ID", true);
+    setBoxContent(resultBox, "未填写 Feishu App ID。", true);
+    return;
+  }
+  if (!String(payload.feishu_app_secret || "").trim()) {
+    setStatus(status, "连接失败：请先填写 Feishu App Secret", true);
+    setBoxContent(resultBox, "未填写 Feishu App Secret。", true);
+    return;
+  }
+  if (!String(payload.feishu_bitable_app_token || "").trim()) {
+    setStatus(status, "连接失败：请先填写多维表格 App Token", true);
+    setBoxContent(resultBox, "未填写多维表格 App Token。", true);
+    return;
+  }
+  if (!String(payload.feishu_bitable_table_id || "").trim()) {
+    setStatus(status, "连接失败：请先填写多维表格 Table ID", true);
+    setBoxContent(resultBox, "未填写多维表格 Table ID。", true);
+    return;
+  }
+
+  try {
+    setStatus(status, "正在测试飞书连接...");
+    const result = await requestJSON("/api/settings/test-feishu", {
+      method: "POST",
+      body: JSON.stringify({
+        feishu_app_id: String(payload.feishu_app_id).trim(),
+        feishu_app_secret: String(payload.feishu_app_secret).trim(),
+        feishu_base_url: String(payload.feishu_base_url || "").trim(),
+        feishu_bitable_app_token: String(payload.feishu_bitable_app_token).trim(),
+        feishu_bitable_table_id: String(payload.feishu_bitable_table_id).trim(),
+      }),
+    });
+    setStatus(status, "飞书连接成功");
+    setBoxContent(
+      resultBox,
+      `App Token：${result.app_token}<br>Table ID：${result.table_id}<br>示例记录数：${result.sample_record_count}`,
+    );
+  } catch (error) {
+    setStatus(status, `连接失败：${error.message}`, true);
+    setBoxContent(resultBox, `连接失败，请检查配置。<br>${error.message}`, true);
+  }
+}
+
+async function syncFeishuContributors() {
+  const resultBox = document.querySelector("#feishu-result");
+  try {
+    setStatus(document.querySelector("#feishu-status"), "正在同步飞书成员映射...");
+    const result = await requestJSON("/api/sync/feishu-contributors", { method: "POST" });
+    setStatus(
+      document.querySelector("#feishu-status"),
+      `已同步 ${result.synced_count} 条成员映射，激活 ${result.active_count} 条`,
+    );
+    const preview = result.contributors
+      .slice(0, 5)
+      .map((item) => `${item.name} / ${item.gitlab_username || "-"} / ${item.component || "-"}`)
+      .join("<br>");
+    setBoxContent(
+      resultBox,
+      `同步成员：${result.synced_count}<br>激活成员：${result.active_count}<br><br>${preview || "暂无成员预览"}`,
+    );
+    await loadContributors();
+  } catch (error) {
+    setStatus(document.querySelector("#feishu-status"), `同步失败：${error.message}`, true);
+    setBoxContent(resultBox, `同步失败，请检查配置。<br>${error.message}`, true);
+  }
+}
+
+function renderContributors(payload) {
+  const summary = document.querySelector("#contributors-summary");
+  const total = document.querySelector("#contributors-total");
+  const active = document.querySelector("#contributors-active");
+  const target = document.querySelector("#contributors-table-wrap");
+
+  summary.textContent = `${payload.active_count} / ${payload.total_count}`;
+  total.textContent = String(payload.total_count);
+  active.textContent = String(payload.active_count);
+
+  if (payload.contributors.length === 0) {
+    target.className = "table-wrap empty-state";
+    target.innerHTML = "尚未同步成员映射。";
+    return;
+  }
+
+  target.className = "table-wrap";
+  target.innerHTML = `
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>开发者姓名</th>
+          <th>GitLab 用户名</th>
+          <th>负责组件</th>
+          <th>状态</th>
+          <th>更新时间</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${payload.contributors
+          .map(
+            (item) => `
+              <tr>
+                <td>${escapeHTML(item.name || "-")}</td>
+                <td>${escapeHTML(item.gitlab_username || "-")}</td>
+                <td>${escapeHTML(item.component || "-")}</td>
+                <td>
+                  <span class="status-pill ${item.is_active ? "" : "is-inactive"}">
+                    ${item.is_active ? "激活" : "已停用"}
+                  </span>
+                </td>
+                <td>${escapeHTML(formatDate(item.updated_at))}</td>
+              </tr>
+            `,
+          )
+          .join("")}
+      </tbody>
+    </table>
+  `;
+}
+
+async function loadContributors() {
+  try {
+    const payload = await requestJSON("/api/contributors");
+    renderContributors(payload);
+    setStatus(
+      document.querySelector("#contributors-status"),
+      payload.total_count > 0 ? `已加载 ${payload.total_count} 条成员映射` : "当前还没有成员映射数据",
+    );
+  } catch (error) {
+    setStatus(document.querySelector("#contributors-status"), `加载成员映射失败：${error.message}`, true);
   }
 }
 
@@ -375,12 +525,15 @@ document.addEventListener("DOMContentLoaded", async () => {
   document.querySelector("#gitlab-form").addEventListener("submit", saveGitLabSettings);
   document.querySelector("#feishu-form").addEventListener("submit", saveFeishuSettings);
   document.querySelector("#test-gitlab-button").addEventListener("click", testGitLabConnection);
+  document.querySelector("#test-feishu-button").addEventListener("click", testFeishuConnection);
+  document.querySelector("#sync-feishu-button").addEventListener("click", syncFeishuContributors);
   document.querySelector("#sync-branches-button").addEventListener("click", syncBranches);
   document.querySelector("#sync-commits-button").addEventListener("click", syncCommits);
 
   try {
     await loadSettings();
     await loadBranchesAndCommits();
+    await loadContributors();
   } catch (error) {
     setStatus(document.querySelector("#page-status"), `初始化失败：${error.message}`, true);
   }

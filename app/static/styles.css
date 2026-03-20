@@ -240,6 +240,74 @@ input:focus {
   font-style: italic;
 }
 
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+}
+
+.stat-chip {
+  display: grid;
+  gap: 6px;
+  padding: 14px 16px;
+  border: 1px solid rgba(216, 207, 191, 0.95);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.58);
+}
+
+.stat-chip strong {
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.stat-chip-label {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.data-table th,
+.data-table td {
+  padding: 12px 10px;
+  border-bottom: 1px solid rgba(216, 207, 191, 0.85);
+  text-align: left;
+  vertical-align: top;
+}
+
+.data-table th {
+  color: var(--muted);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.data-table td {
+  font-size: 0.96rem;
+}
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 4px 10px;
+  background: rgba(11, 107, 97, 0.12);
+  color: var(--accent-strong);
+  font-size: 0.86rem;
+  white-space: nowrap;
+}
+
+.status-pill.is-inactive {
+  background: rgba(180, 35, 24, 0.1);
+  color: var(--danger);
+}
+
 .commit-layout {
   display: grid;
   gap: 18px;

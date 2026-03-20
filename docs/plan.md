@@ -14,24 +14,26 @@
 
 ## 1.1 Mock 验证基线
 
-为了降低联调成本，项目内维护一套正式的 Mock GitLab 能力，作为后续 stage 的默认验证基础设施。
+为了降低联调成本，项目内维护一套正式的 Mock GitLab 和 Mock Feishu 能力，作为后续 stage 的默认验证基础设施。
 
 当前约定：
 
 - 使用根目录入口 `run_mock_gitlab.py`
+- 使用根目录入口 `run_mock_feishu.py`
 - Mock 数据放在 `mock/fixtures/`
 - 支持的基础场景：
   - `basic`
   - `no_commits`
   - `many_commits`
+  - `feishu_basic`
 - 支持通过启动参数注入慢响应和接口错误，验证容错逻辑
 
 建议使用方式：
 
-1. 先启动 `run_mock_gitlab.py`
+1. 先启动 `run_mock_gitlab.py` / `run_mock_feishu.py`
 2. 再启动主应用
-3. 将 GitLab Base URL 指向本地 mock 服务
-4. 使用固定场景重复验证同步、筛选、分页、日报等能力
+3. 将 GitLab / Feishu Base URL 指向本地 mock 服务
+4. 使用固定场景重复验证同步、筛选、分页、成员同步、日报等能力
 
 ## 2. 总体阶段划分
 
@@ -200,6 +202,7 @@ flowchart LR
 - 实现飞书连接测试接口
 - 拉取多维表格记录
 - 按固定字段映射为 `contributors`
+- 增加可复用的 Mock Feishu 验证能力
 - 实现同步接口：
   - `POST /api/sync/feishu-contributors`
 - 飞书页面支持保存配置、测试连接、同步成员
@@ -211,6 +214,7 @@ flowchart LR
 
 验证方式：
 
+- 使用 Mock Feishu 场景验证成员同步链路
 - `contributors` 表出现同步后的成员数据
 - 能正确读取“开发者姓名 / GitLab 用户名 / 负责组件”
 - 重复同步不会无限新增脏数据
